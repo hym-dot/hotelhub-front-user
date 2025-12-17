@@ -27,7 +27,7 @@ services:
     # ❌ 기존 environment 설정 (주석 처리)
     # environment:
     #   NODE_ENV: production
-    #   MONGO_URI: mongodb+srv://admin:1234@hotel-project.gitlp15.mongodb.net/hotel-project?appName=hotel-project
+    #   MONGO_URI: mongodb+srv://<id>:<password>@hotel-project.1sd22.mongodb.net/hotel-project?appName=hotel-project
     #   PORT: 3000
     
     # 🌟 로컬에서 백엔드 테스트를 위해 포트 주석 해제 (3000번 포트 연결)
