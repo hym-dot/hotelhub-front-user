@@ -1,83 +1,48 @@
+version: '3.8'
 
 services:
   mongodb:
     image: mongo:6.0
-    container_name: mongodb
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: pass123
-    networks:
-      - app-net
+    container_name: 3hotel-mongodb
+    restart: always
     volumes:
-      - mongo-data:/data/db
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.runCommand({ping: 1})", "--quiet"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - mongodb_data:/data/db
+    # 외부 포트 연결 (필요 없는 경우 주석 처리 가능)
+    # ports:
+    #   - "27017:27017"
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: express-dev
-    ports:
-      - "3000:3000"
-    environment:
-      PORT: 3000
-      # ✅ 수정: host.docker.internal -> mongodb (컨테이너끼리는 이름으로 통신)
-      MONGO_URI: mongodb://root:pass123@mongodb:27017/hotel-project?authSource=admin
-      JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
-      JWT_EXPIRES_IN: 7d
-      NODE_ENV: development
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-    networks:
-      - app-net
+    image: miso4kij/3-hotel-backend:1.0
+    container_name: 3hotel-backend
+    restart: always
     depends_on:
       - mongodb
-    command: npm run dev
+    
+    # 🌟 수정 권장: .env 파일을 사용하도록 변경
+    # MONGO_URI를 여기에 직접 설정하는 대신 .env 파일에서 읽도록 합니다.
+    # 아래 env_file 설정을 사용하려면, docker-compose.yml과 같은 위치에 .env 파일을 생성해야 합니다.
+    env_file:
+      - .env
+
+    # ❌ 기존 environment 설정 (주석 처리)
+    # environment:
+    #   NODE_ENV: production
+    #   MONGO_URI: mongodb+srv://admin:1234@hotel-project.gitlp15.mongodb.net/hotel-project?appName=hotel-project
+    #   PORT: 3000
+    
+    # 🌟 로컬에서 백엔드 테스트를 위해 포트 주석 해제 (3000번 포트 연결)
+    ports:
+      - "3000:3000"
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: react-dev
-    ports:
-      - "5173:5173"
-    environment:
-      # ✅ 수정: API 요청은 Nginx가 처리하므로 상대 경로 혹은 Nginx 주소를 타게 함
-      # 개발 환경에서는 Vite Proxy가 처리하므로 사실상 큰 의미는 없지만 localhost는 피함
-      VITE_API_URL: "" 
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    networks:
-      - app-net
+    image: miso4kij/3-hotel-frontend:1.0
+    container_name: 3hotel-frontend
+    restart: always
     depends_on:
       - backend
-    command: npm run dev
-
-  nginx:
-    image: nginx:alpine
-    container_name: nginx-proxy
     ports:
+      # 80번 포트는 w-hotel.store로 바로 접속 가능하도록 설정되어 있음
       - "80:80"
-    volumes:
-      # ⚠️ 주의: nginx.conf 파일 위치가 정확한지 꼭 확인하세요!
-      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    networks:
-      - app-net
-    depends_on:
-      - backend
-      - frontend
-
-networks:
-  app-net:
-    driver: bridge
 
 volumes:
-  mongo-data:
+  mongodb_data:
