@@ -66,8 +66,8 @@ const SearchPage = () => {
 
         // 체크인/체크아웃이 있으면 추가
         if (checkInDate && checkOutDate) {
-          params.checkIn = checkInDate.toISOString().split('T')[0];
-          params.checkOut = checkOutDate.toISOString().split('T')[0];
+          params.checkIn = checkInDate.toISOString().split("T")[0];
+          params.checkOut = checkOutDate.toISOString().split("T")[0];
         }
 
         // 인원은 선택했을 때만 추가
@@ -75,9 +75,18 @@ const SearchPage = () => {
           params.guests = guests;
         }
 
+        // 백엔드가 배열 또는 { items, total } 형태를 모두 반환할 수 있으므로 유연하게 처리
         const response = await hotelApi.getHotels(params);
-        setHotels(response?.items || []);
-        setTotalCount(response?.total || 0);
+        const items = Array.isArray(response)
+          ? response
+          : response?.items || [];
+        const total =
+          Array.isArray(response) && response.length
+            ? response.length
+            : response?.total ?? items.length ?? 0;
+
+        setHotels(items);
+        setTotalCount(total);
       } catch (error) {
         setHotels([]);
       } finally {
@@ -303,7 +312,7 @@ const SearchPage = () => {
             )}
 
             {/* ✅ [추가] Show more results 버튼 */}
-            {hotels.length > 0 && totalCount > hotels.length && (
+            {filteredHotels.length > 0 && totalCount > hotels.length && (
               <button className="btn-show-more" onClick={() => setCurrentPage(prev => prev + 1)}>
                 Show more results
               </button>

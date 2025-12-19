@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faChevronLeft,
@@ -14,6 +14,7 @@ import '../../styles/pages/booking/BookingStepExtras.scss';
 
 const BookingStepExtras = () => {
   const { bookingData, setBookingData, navigate } = useOutletContext();
+  const { hotelId } = useParams();
   const [selectedExtras, setSelectedExtras] = useState(bookingData.extras || []);
 
   const extras = [
@@ -28,7 +29,7 @@ const BookingStepExtras = () => {
     {
       id: 2,
       name: '주차',
-      description: '투숙 기간 내 1대 주차',
+      description: '투숙 기간 내내 주차',
       icon: faParking,
       price: 20000,
       selected: false,
@@ -83,7 +84,8 @@ const BookingStepExtras = () => {
   const handleNext = () => {
     setBookingData((prev) => {
       const baseAmount = (prev.totalPrice || 0) - (prev.extrasTotal || 0);
-      const recalculatedBase = baseAmount > 0 ? baseAmount : (prev.pricePerNight || 0) * (prev.nights || 1);
+      const recalculatedBase =
+        baseAmount > 0 ? baseAmount : (prev.pricePerNight || 0) * (prev.nights || 1);
       return {
         ...prev,
         extras: selectedExtras,
@@ -92,17 +94,18 @@ const BookingStepExtras = () => {
         totalPrice: recalculatedBase + totalExtrasPrice,
       };
     });
-    navigate('../payment', { relative: 'path' });
+    navigate(`/booking/${hotelId}/payment`);
   };
 
   const handleBack = () => {
-    navigate(-1);
+    navigate(`/booking/${hotelId}/room`);
   };
 
   const skipExtras = () => {
     setBookingData((prev) => {
       const baseAmount = (prev.totalPrice || 0) - (prev.extrasTotal || 0);
-      const recalculatedBase = baseAmount > 0 ? baseAmount : (prev.pricePerNight || 0) * (prev.nights || 1);
+      const recalculatedBase =
+        baseAmount > 0 ? baseAmount : (prev.pricePerNight || 0) * (prev.nights || 1);
       return {
         ...prev,
         extras: [],
@@ -111,7 +114,7 @@ const BookingStepExtras = () => {
         totalPrice: recalculatedBase,
       };
     });
-    navigate('../payment', { relative: 'path' });
+    navigate(`/booking/${hotelId}/payment`);
   };
 
   return (

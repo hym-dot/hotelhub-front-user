@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { dbConnection } from "../config/db.js";
 import { Reservation } from "./model.js";
 import { Payment } from "../payment/model.js";
 import * as paymentService from "../payment/service.js";
@@ -8,7 +9,8 @@ import * as couponService from "../coupon/service.js";
 export const createReservation = async (userId, data) => {
   const { roomId, hotelId, guests, couponCode, checkIn, checkOut } = data;
 
-  const session = await mongoose.startSession();
+  // Use the same connection used by models to avoid buffering timeouts
+  const session = await dbConnection.startSession();
   session.startTransaction();
   try {
     const room = await Room.findById(roomId).populate("hotel").session(session);
@@ -96,7 +98,7 @@ export const createReservation = async (userId, data) => {
 
 export const getReservationDetail = async (id, userId) => {
   const reservation = await Reservation.findOne({ _id: id, userId })
-    .populate("hotelId", "name address")
+    .populate("hotelId", "name address location coords images")
     .populate("roomId", "name type price")
     .populate("paymentId", "status amount");
 
@@ -110,7 +112,7 @@ export const getReservationDetail = async (id, userId) => {
 
 export const getReservationsByUser = async (userId) => {
   return await Reservation.find({ userId })
-    .populate("hotelId", "name address")
+    .populate("hotelId", "name address location coords images")
     .populate("roomId", "name type")
     .sort({ createdAt: -1 });
 };

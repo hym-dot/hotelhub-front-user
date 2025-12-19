@@ -8,12 +8,10 @@ const BookingComplete = () => {
   const { bookingData } = useOutletContext();
 
   const handleDownload = () => {
-    // PDF 다운로드 로직
     alert('예약 확인서를 다운로드합니다.');
   };
 
   const handlePrint = () => {
-    // 인쇄 로직
     window.print();
   };
 
@@ -31,13 +29,24 @@ const BookingComplete = () => {
     );
   }
 
+  const formatDate = (value) => {
+    if (!value) return '';
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString();
+  };
+
   const displayData = {
     confirmationNumber: bookingData.reservationId || 'N/A',
     bookingDate: new Date().toLocaleDateString(),
-    hotelName: bookingData.hotel?.name || '호텔',
-    location: bookingData.hotel?.address || '위치 정보',
-    checkInDate: bookingData.checkIn || bookingData.checkInDate,
-    checkOutDate: bookingData.checkOut || bookingData.checkOutDate,
+    hotelName: bookingData.hotel?.name || bookingData.hotelName || '호텔',
+    location:
+      bookingData.hotel?.address ||
+      bookingData.hotel?.location ||
+      bookingData.hotel?.city ||
+      bookingData.location ||
+      '위치 정보',
+    checkInDate: formatDate(bookingData.checkIn || bookingData.checkInDate),
+    checkOutDate: formatDate(bookingData.checkOut || bookingData.checkOutDate),
     nights: bookingData.nights || 1,
     roomType: bookingData.roomType?.name || bookingData.roomType || '객실',
     guests: bookingData.guests || bookingData.guestCount || 1,
@@ -55,7 +64,7 @@ const BookingComplete = () => {
         <h1>예약이 완료되었습니다!</h1>
         <p>
           {displayData.email && displayData.email !== '입력된 이메일 없음'
-            ? `예약 확인 메일이 ${displayData.email}로 발송되었습니다.`
+            ? `예약 확인 메일을 ${displayData.email}로 발송했습니다.`
             : '예약 확인 메일은 예약 시 입력한 이메일로 발송됩니다.'}
         </p>
       </div>
@@ -66,7 +75,7 @@ const BookingComplete = () => {
             <h2>예약 확인번호</h2>
             <div className="confirmation-number">{displayData.confirmationNumber}</div>
             <p className="confirmation-note">
-              예약과 관련된 문의사항이 있으실 때는 이 확인번호를 알려주세요.
+              예약과 관련된 문의사항이 있을 때는 확인번호를 알려주세요.
             </p>
           </div>
 
@@ -74,52 +83,43 @@ const BookingComplete = () => {
             <h2>예약 정보</h2>
 
             <div className="details-grid">
-              {/* 호텔 정보 */}
               <div className="detail-group">
                 <label>호텔</label>
                 <h3>{displayData.hotelName}</h3>
                 <p>{displayData.location}</p>
               </div>
 
-              {/* 체크인/아웃 */}
               <div className="detail-group">
                 <label>체크인 날짜</label>
                 <p className="detail-value">
-                  <FontAwesomeIcon icon={faCalendarAlt} />
-                  {displayData.checkInDate}
+                  <FontAwesomeIcon icon={faCalendarAlt} /> {displayData.checkInDate || '-'}
                 </p>
               </div>
 
               <div className="detail-group">
                 <label>체크아웃 날짜</label>
                 <p className="detail-value">
-                  <FontAwesomeIcon icon={faCalendarAlt} />
-                  {displayData.checkOutDate}
+                  <FontAwesomeIcon icon={faCalendarAlt} /> {displayData.checkOutDate || '-'}
                 </p>
               </div>
 
-              {/* 숙박 기간 */}
               <div className="detail-group">
                 <label>숙박 기간</label>
                 <p className="detail-value">{displayData.nights}박</p>
               </div>
 
-              {/* 객실 정보 */}
               <div className="detail-group">
                 <label>객실 타입</label>
                 <p className="detail-value">{displayData.roomType}</p>
               </div>
 
-              {/* 투숙객 */}
               <div className="detail-group">
                 <label>투숙객 수</label>
                 <p className="detail-value">
-                  <FontAwesomeIcon icon={faUsers} />
-                  {displayData.guests}명
+                  <FontAwesomeIcon icon={faUsers} /> {displayData.guests}명
                 </p>
               </div>
 
-              {/* 연락처 */}
               {displayData.phone && (
                 <div className="detail-group">
                   <label>연락처</label>
@@ -127,7 +127,6 @@ const BookingComplete = () => {
                 </div>
               )}
 
-              {/* 총 가격 */}
               <div className="detail-group full-width">
                 <label>총 결제 금액</label>
                 <p className="detail-value price">₩{displayData.totalPrice.toLocaleString()}</p>
@@ -135,7 +134,6 @@ const BookingComplete = () => {
             </div>
           </div>
 
-          {/* 다음 단계 안내 */}
           <div className="next-steps">
             <h2>다음 단계</h2>
             <div className="steps-list">
@@ -173,15 +171,13 @@ const BookingComplete = () => {
             </div>
           </div>
 
-          {/* 도움말 */}
           <div className="help-section">
             <h3>도움이 필요하신가요?</h3>
-            <p>예약에 관련된 문의사항이 있으시면 고객센터로 문의해주세요.</p>
+            <p>예약에 관련된 문의사항이 있으면 고객센터로 문의해주세요.</p>
             <button className="btn-contact">고객센터 문의</button>
           </div>
         </div>
 
-        {/* 액션 버튼 */}
         <div className="action-buttons">
           <button className="btn-download" onClick={handleDownload}>
             <FontAwesomeIcon icon={faDownload} />

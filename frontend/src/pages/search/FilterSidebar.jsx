@@ -1,12 +1,9 @@
 import React, { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faStar,
-  faChevronUp,
-  faChevronDown,
-} from "@fortawesome/free-solid-svg-icons";
+import { faStar, faChevronUp, faChevronDown } from "@fortawesome/free-solid-svg-icons";
+import { defaultFilters } from "../../utils/filterHotels";
 
-/* ✅ [추가] 접었다 폈다 할 수 있는 섹션 컴포넌트 */
+// 섹션 접기/펼치기 컨테이너
 const FilterSection = ({ title, children, defaultOpen = true }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
@@ -14,71 +11,114 @@ const FilterSection = ({ title, children, defaultOpen = true }) => {
     <div className="filter-section">
       <div className="section-header" onClick={() => setIsOpen(!isOpen)}>
         <h4>{title}</h4>
-        {/* 열려있으면 위쪽 화살표, 닫혀있으면 아래쪽 화살표 */}
         <FontAwesomeIcon icon={isOpen ? faChevronUp : faChevronDown} />
       </div>
-
-      {/* 열려있을 때만 내용 보여줌 */}
       {isOpen && <div className="section-content">{children}</div>}
     </div>
   );
 };
 
-const FilterSidebar = () => {
-  const [priceRange, setPriceRange] = useState(1200);
+const ratingOptions = [
+  { value: 5, label: "5.0" },
+  { value: 4, label: "4.0 이상" },
+  { value: 3, label: "3.0 이상" },
+  { value: 2, label: "2.0 이상" },
+  { value: 1, label: "1.0 이상" },
+];
+
+const freebiesOptions = [
+  { label: "무료 와이파이", value: "무료 와이파이" },
+  { label: "무료 조식", value: "무료 조식" },
+  { label: "무료 주차", value: "무료 주차" },
+  { label: "공항 셔틀", value: "공항 셔틀" },
+  { label: "무료 취소", value: "무료 취소" },
+];
+
+const amenityOptions = [
+  { label: "수영장", value: "수영장" },
+  { label: "스파/사우나", value: "스파" },
+  { label: "피트니스", value: "피트니스" },
+  { label: "바비큐 시설", value: "바비큐 시설" },
+  { label: "비즈니스 센터", value: "비즈니스 센터" },
+];
+
+const priceMin = 50;
+const priceMax = 1200;
+
+const FilterSidebar = ({ filters = defaultFilters, onChange = () => { } }) => {
+  const currentPrice = Number(filters?.price ?? priceMax);
+
+  const handlePriceChange = (value) => {
+    onChange((prev) => ({
+      ...prev,
+      price: Number(value),
+    }));
+  };
+
+  const toggleSelection = (key, value) => {
+    onChange((prev) => {
+      const prevList = prev?.[key] || [];
+      const exists = prevList.includes(value);
+      const nextList = exists
+        ? prevList.filter((item) => item !== value)
+        : [...prevList, value];
+      return {
+        ...prev,
+        [key]: nextList,
+      };
+    });
+  };
+
+  const isChecked = (key, value) => (filters?.[key] || []).includes(value);
 
   return (
     <div className="filter-sidebar">
-      <h3 className="filter-title">Filters</h3>
+      <h3 className="filter-title">필터</h3>
 
-      {/* 1. Price Filter */}
-      <FilterSection title="Price">
+      {/* 1. 가격 필터 */}
+      <FilterSection title="가격">
         <div className="price-range-control">
           <input
             type="range"
-            min="50"
-            max="1200"
-            value={priceRange}
-            onChange={(e) => setPriceRange(e.target.value)}
+            min={priceMin}
+            max={priceMax}
+            value={currentPrice}
+            onChange={(e) => handlePriceChange(e.target.value)}
             className="range-slider"
             style={{
-              background: `linear-gradient(to right, #112211 0%, #112211 ${
-                ((priceRange - 50) / (1200 - 50)) * 100
-              }%, #ddd ${((priceRange - 50) / (1200 - 50)) * 100}%, #ddd 100%)`,
+              background: `linear-gradient(to right, #112211 0%, #112211 ${((currentPrice - priceMin) / (priceMax - priceMin)) * 100
+                }%, #ddd ${((currentPrice - priceMin) / (priceMax - priceMin)) * 100
+                }%, #ddd 100%)`,
             }}
           />
           <div className="range-labels">
-            <span>$50</span>
-            <span>${priceRange}</span>
+            <span>₩{priceMin.toLocaleString()}</span>
+            <span>₩{currentPrice.toLocaleString()}</span>
           </div>
         </div>
       </FilterSection>
 
       <div className="divider"></div>
 
-      {/* 2. Rating Filter */}
-      <FilterSection title="Rating">
+      {/* 2. 별점 필터 */}
+      <FilterSection title="별점">
         <div className="checkbox-group">
-          {[5, 4, 3, 2, 1].map((star) => (
-            <label key={star} className="checkbox-item">
-              <input type="checkbox" />
+          {ratingOptions.map(({ value, label }) => (
+            <label key={value} className="checkbox-item">
+              <input
+                type="checkbox"
+                checked={isChecked("ratings", value)}
+                onChange={() => toggleSelection("ratings", value)}
+              />
               <span className="stars">
-                {[...Array(star)].map((_, i) => (
-                  <FontAwesomeIcon
-                    key={i}
-                    icon={faStar}
-                    className="star-gold"
-                  />
+                {[...Array(value)].map((_, i) => (
+                  <FontAwesomeIcon key={i} icon={faStar} className="star-gold" />
                 ))}
-                {[...Array(5 - star)].map((_, i) => (
-                  <FontAwesomeIcon
-                    key={i}
-                    icon={faStar}
-                    className="star-gray"
-                  />
+                {[...Array(5 - value)].map((_, i) => (
+                  <FontAwesomeIcon key={i} icon={faStar} className="star-gray" />
                 ))}
               </span>
-              <span className="count">{star * 15 + 20}</span>
+              <span className="count">{label}</span>
             </label>
           ))}
         </div>
@@ -86,46 +126,37 @@ const FilterSidebar = () => {
 
       <div className="divider"></div>
 
-      {/* 3. Freebies Filter */}
-      <FilterSection title="Freebies">
+      {/* 3. 무료 혜택 */}
+      <FilterSection title="무료 혜택">
         <div className="checkbox-group">
-          <label className="checkbox-item">
-            <input type="checkbox" /> Free breakfast
-          </label>
-          <label className="checkbox-item">
-            <input type="checkbox" /> Free parking
-          </label>
-          <label className="checkbox-item">
-            <input type="checkbox" /> Free internet
-          </label>
-          <label className="checkbox-item">
-            <input type="checkbox" /> Free airport shuttle
-          </label>
-          <label className="checkbox-item">
-            <input type="checkbox" /> Free cancellation
-          </label>
+          {freebiesOptions.map(({ label, value }) => (
+            <label key={value} className="checkbox-item">
+              <input
+                type="checkbox"
+                checked={isChecked("freebies", value)}
+                onChange={() => toggleSelection("freebies", value)}
+              />{" "}
+              {label}
+            </label>
+          ))}
         </div>
       </FilterSection>
 
       <div className="divider"></div>
 
-      {/* 4. Amenities Filter */}
-      <FilterSection title="Amenities">
+      {/* 4. 편의시설 */}
+      <FilterSection title="편의시설">
         <div className="checkbox-group">
-          <label className="checkbox-item">
-            <input type="checkbox" /> 24hr front desk{" "}
-            <span className="count">108</span>
-          </label>
-          <label className="checkbox-item">
-            <input type="checkbox" /> Air-conditioned{" "}
-            <span className="count">45</span>
-          </label>
-          <label className="checkbox-item">
-            <input type="checkbox" /> Fitness <span className="count">32</span>
-          </label>
-          <label className="checkbox-item">
-            <input type="checkbox" /> Pool <span className="count">21</span>
-          </label>
+          {amenityOptions.map(({ label, value }) => (
+            <label key={value} className="checkbox-item">
+              <input
+                type="checkbox"
+                checked={isChecked("amenities", value)}
+                onChange={() => toggleSelection("amenities", value)}
+              />{" "}
+              {label}
+            </label>
+          ))}
         </div>
       </FilterSection>
     </div>

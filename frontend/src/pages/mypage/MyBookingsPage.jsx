@@ -5,12 +5,8 @@ import {
   faCalendarAlt,
   faMapMarkerAlt,
   faUser,
-  faPhone,
-  faEnvelope,
   faChevronRight,
   faClock,
-  faCheckCircle,
-  faTimes,
 } from "@fortawesome/free-solid-svg-icons";
 import { reservationApi } from "../../api/reservationApi";
 import "../../styles/pages/mypage/MyBookingsPage.scss";
@@ -25,7 +21,49 @@ const MyBookingsPage = () => {
       setLoading(true);
       try {
         const data = await reservationApi.getMyReservations();
-        setBookings(data || []);
+        const normalized = (data || []).map((booking) => {
+          const checkIn = booking.checkIn || booking.checkInDate;
+          const checkOut = booking.checkOut || booking.checkOutDate;
+          const nights =
+            checkIn && checkOut
+              ? Math.max(
+                  1,
+                  Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24))
+                )
+              : booking.nights || 1;
+          const price =
+            booking.totalPrice ??
+            booking.basePrice ??
+            booking.price ??
+            0;
+
+          return {
+            id: booking.id || booking._id || booking.reservationId,
+            reservationCode: booking.reservationId || booking.id || booking._id,
+            status: booking.status || "pending",
+            hotelName: booking.hotelId?.name || booking.hotelName || "호텔",
+            location:
+              booking.hotelId?.address ||
+              booking.location ||
+              booking.hotelId?.city ||
+              "위치 정보",
+            image:
+              booking.image ||
+              booking.hotelId?.images?.[0] ||
+              booking.roomId?.image ||
+              "/images/hotel-placeholder.jpg",
+            checkIn: checkIn ? new Date(checkIn).toLocaleDateString() : "",
+            checkOut: checkOut ? new Date(checkOut).toLocaleDateString() : "",
+            guests: booking.guests || booking.guestCount || 1,
+            roomType: booking.roomId?.name || booking.roomId?.type || booking.roomType || "객실",
+            nights,
+            price,
+            cancellable: booking.status === "confirmed",
+            coords: booking.hotelId?.coords,
+            address: booking.hotelId?.address || booking.location || "",
+          };
+        });
+        setBookings(normalized);
       } catch (error) {
         console.error('예약 목록 로드 실패:', error);
       } finally {
@@ -36,7 +74,6 @@ const MyBookingsPage = () => {
     loadBookings();
   }, []);
 
-  // 탭에 따라 필터링
   const filteredBookings = bookings.filter((booking) => {
     if (activeTab === "all") return true;
     return booking.status === activeTab;
@@ -47,11 +84,11 @@ const MyBookingsPage = () => {
   const getStatusBadge = (status) => {
     switch (status) {
       case "confirmed":
-        return <span className="badge confirmed">확정됨</span>;
+        return <span className="badge confirmed">확정</span>;
       case "completed":
         return <span className="badge completed">완료</span>;
       case "cancelled":
-        return <span className="badge cancelled">취소됨</span>;
+        return <span className="badge cancelled">취소</span>;
       default:
         return <span className="badge">{status}</span>;
     }
@@ -64,7 +101,6 @@ const MyBookingsPage = () => {
         <p>모든 예약 내역을 확인하고 관리하세요</p>
       </div>
 
-      {/* 탭 메뉴 */}
       <div className="bookings-tabs">
         <button
           className={`tab-item ${activeTab === "all" ? "active" : ""}`}
@@ -76,7 +112,7 @@ const MyBookingsPage = () => {
           className={`tab-item ${activeTab === "confirmed" ? "active" : ""}`}
           onClick={() => setActiveTab("confirmed")}
         >
-          예정된 예약
+          확정된 예약
         </button>
         <button
           className={`tab-item ${activeTab === "completed" ? "active" : ""}`}
@@ -92,7 +128,6 @@ const MyBookingsPage = () => {
         </button>
       </div>
 
-      {/* 예약 목록 */}
       <div className="bookings-list">
         {filteredBookings.length > 0 ? (
           filteredBookings.map((booking) => (
@@ -150,7 +185,7 @@ const MyBookingsPage = () => {
                     <div className="detail-item">
                       <FontAwesomeIcon icon={faClock} className="icon" />
                       <div className="detail-text">
-                        <span className="label">객실타입</span>
+                        <span className="label">객실 타입</span>
                         <span className="value">{booking.roomType}</span>
                       </div>
                     </div>
@@ -162,19 +197,13 @@ const MyBookingsPage = () => {
                     <span className="nights-label">{booking.nights}박</span>
                     <div className="price-info">
                       <span className="price-label">총 금액</span>
-                      <span className="price">₩{booking.price.toLocaleString()}</span>
+                      <span className="price">₩{Number(booking.price || 0).toLocaleString()}</span>
                     </div>
                   </div>
 
                   <div className="action-buttons">
-                    {booking.status === "completed" && (
-                      <button className="btn-action btn-review">리뷰 작성</button>
-                    )}
-                    {booking.status === "confirmed" && booking.cancellable && (
-                      <button className="btn-action btn-cancel">예약 취소</button>
-                    )}
                     <button className="btn-action btn-details">
-                      상세보기
+                      자세히보기
                       <FontAwesomeIcon icon={faChevronRight} />
                     </button>
                   </div>
@@ -186,9 +215,9 @@ const MyBookingsPage = () => {
           <div className="empty-state">
             <FontAwesomeIcon icon={faCalendarAlt} />
             <h3>예약이 없습니다</h3>
-            <p>아직 예약한 호텔이 없어요</p>
+            <p>지금 호텔을 검색해 예약해 보세요.</p>
             <Link to="/search" className="btn-search">
-              호텔 검색하러 가기
+              호텔 검색하기
             </Link>
           </div>
         )}

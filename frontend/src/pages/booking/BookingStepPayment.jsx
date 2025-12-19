@@ -1,34 +1,26 @@
-import React, { useState } from 'react';
-import { useOutletContext, useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useOutletContext, useParams, useSearchParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faChevronLeft,
-  faChevronRight,
-  faCreditCard,
-  faLock,
-  faCheck,
-} from '@fortawesome/free-solid-svg-icons';
+import { faChevronLeft, faChevronRight, faCreditCard, faLock } from '@fortawesome/free-solid-svg-icons';
 import { reservationApi } from '../../api/reservationApi';
+import { paymentApi } from '../../api/paymentApi';
 import '../../styles/pages/booking/BookingStepPayment.scss';
 
 const BookingStepPayment = () => {
   const { hotelId } = useParams();
+  const [searchParams] = useSearchParams();
   const { bookingData, setBookingData, navigate } = useOutletContext();
-  const [paymentMethod, setPaymentMethod] = useState('card');
+  const [paymentMethod] = useState('card');
   const [formData, setFormData] = useState({
     fullName: '',
-    cardNumber1: '',
-    cardNumber2: '',
-    cardNumber3: '',
-    cardNumber4: '',
-    expiryMonth: '',
-    expiryYear: '',
-    cvv: '',
     email: '',
     phone: '',
     agreeTerms: false,
   });
   const [loading, setLoading] = useState(false);
+
+  const tossClientKey =
+    import.meta.env.VITE_TOSS_CLIENT_KEY || 'test_ck_vZnjEJeQVxLR916Jw7ePVPmOoBN0';
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -38,41 +30,109 @@ const BookingStepPayment = () => {
     }));
   };
 
-  const handleCardNumberChange = (index, value) => {
-    // 숫자만 입력 허용
-    const numericValue = value.replace(/\D/g, '').slice(0, 4);
-    const fieldName = `cardNumber${index}`;
-    
-    setFormData((prev) => ({
-      ...prev,
-      [fieldName]: numericValue,
-    }));
+  const loadTossPayments = () =>
+    new Promise((resolve, reject) => {
+      if (window.TossPayments) {
+        resolve(window.TossPayments);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://js.tosspayments.com/v1/payment';
+      script.onload = () => resolve(window.TossPayments);
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
 
-    // 4자리 입력되면 다음 필드로 자동 이동
-    if (numericValue.length === 4 && index < 4) {
-      const nextInput = document.querySelector(`input[name="cardNumber${index + 1}"]`);
-      if (nextInput) nextInput.focus();
+  const fetchReservationDetail = async (reservationId) => {
+    if (!reservationId) return null;
+    try {
+      const detail = await reservationApi.getReservationDetail(reservationId);
+      return detail;
+    } catch (err) {
+      console.error('예약 상세 조회 실패:', err);
+      return null;
     }
   };
 
-  const formatCardNumber = (value) => {
-    return value.replace(/\s/g, '').replace(/(.{4})/g, '$1 ').trim();
+  const confirmIfRedirected = async () => {
+    const paymentKey = searchParams.get('paymentKey');
+    const orderId = searchParams.get('orderId');
+    const amount = Number(searchParams.get('amount'));
+    const reservationId = searchParams.get('reservationId') || bookingData?.reservationId;
+
+    if (!paymentKey || !orderId || !amount || !reservationId) return;
+
+    setLoading(true);
+    try {
+      const result = await paymentApi.confirmPayment({
+        paymentKey,
+        orderId,
+        amount,
+        reservationId,
+        roomId: bookingData?.roomType?._id || bookingData?.roomType?.id,
+        customerName: formData.fullName || bookingData?.payerName,
+        customerEmail: formData.email || bookingData?.email,
+        customerPhone: formData.phone || bookingData?.phone,
+      });
+
+      const detail = await fetchReservationDetail(reservationId);
+
+      setBookingData((prev) => ({
+        ...prev,
+        reservationId: result?.reservationId || reservationId,
+        paymentMethod,
+        totalPrice: result?.totalAmount || detail?.totalPrice || prev.totalPrice || amount,
+        hotel: detail?.hotelId || prev.hotel,
+        roomType: detail?.roomId || prev.roomType,
+        checkIn: detail?.checkIn || prev.checkIn,
+        checkOut: detail?.checkOut || prev.checkOut,
+        guests: detail?.guests || prev.guests,
+        nights:
+          prev.nights ||
+          (detail?.checkIn && detail?.checkOut
+            ? Math.max(
+                1,
+                Math.ceil((new Date(detail.checkOut) - new Date(detail.checkIn)) / (1000 * 60 * 60 * 24))
+              )
+            : 1),
+        email: formData.email || prev.email,
+        phone: formData.phone || prev.phone,
+        payerName: formData.fullName || prev.payerName,
+      }));
+
+      navigate(`/booking/${hotelId}/complete`);
+    } catch (error) {
+      console.error('결제 승인 실패:', error);
+      alert(error.response?.data?.message || error.message || '결제 승인에 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const formatExpiryDate = (value) => {
-    return value.replace(/\D/g, '').replace(/(\d{2})(\d{2})/, '$1/$2');
-  };
+  useEffect(() => {
+    confirmIfRedirected();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const handlePayment = async (e) => {
-    e.preventDefault();
-
+  const handlePayment = async () => {
     if (!formData.agreeTerms) {
-      alert('필수 약관에 동의해주세요');
+      alert('이용 약관에 동의해주세요.');
       return;
     }
 
     if (!bookingData.roomType) {
-      alert('객실을 선택해주세요');
+      alert('객실을 선택해주세요.');
+      return;
+    }
+
+    if (!bookingData.checkIn || !bookingData.checkOut) {
+      alert('체크인/체크아웃 정보를 먼저 선택해주세요.');
+      navigate(`/booking/${hotelId}`);
+      return;
+    }
+
+    if (!tossClientKey) {
+      alert('Toss Payments 클라이언트 키가 설정되지 않았습니다.');
       return;
     }
 
@@ -84,42 +144,72 @@ const BookingStepPayment = () => {
         checkIn: bookingData.checkIn || bookingData.checkInDate?.toISOString().split('T')[0],
         checkOut: bookingData.checkOut || bookingData.checkOutDate?.toISOString().split('T')[0],
         guests: bookingData.guests || bookingData.guestCount || 1,
-        paymentMethod: paymentMethod,
       };
 
       if (bookingData.extras && bookingData.extras.length > 0) {
         reservationPayload.extras = bookingData.extras;
       }
 
-      const result = await reservationApi.createReservation(reservationPayload);
-      
+      const reservation = await reservationApi.createReservation(reservationPayload);
+      const reservationId = reservation._id || reservation.id;
+      const amount = reservation.totalPrice || bookingData.totalPrice || 0;
+      const orderId = `order-${reservationId}`;
+      const orderName = `${bookingData.hotel?.name || 'Hotel'} - ${bookingData.roomType?.name || 'Room'}`;
+
       setBookingData((prev) => ({
         ...prev,
-        reservationId: result._id || result.id,
+        reservationId,
         paymentMethod,
-        totalPrice: result.totalPrice || prev.totalPrice,
-        hotel: result.hotel || prev.hotel, // hotel 정보 추가
-        roomType: result.roomType || prev.roomType,
-        checkIn: result.checkIn || prev.checkIn, // 서버에서 받은 정보 동기화
-        checkOut: result.checkOut || prev.checkOut,
-        guests: result.guests || prev.guests,
-        nights: result.nights || prev.nights,
+        totalPrice: amount,
+        hotel: reservation.hotel || prev.hotel,
+        roomType: reservation.roomType || prev.roomType,
+        checkIn: reservation.checkIn || prev.checkIn,
+        checkOut: reservation.checkOut || prev.checkOut,
+        guests: reservation.guests || prev.guests,
+        nights: reservation.nights || prev.nights,
         email: formData.email,
         phone: formData.phone,
         payerName: formData.fullName,
       }));
-      
-      navigate('../complete', { relative: 'path' });
+
+      const tossPaymentsCtor = await loadTossPayments();
+      const tossPayments = tossPaymentsCtor(tossClientKey);
+
+      const successUrl = new URL(window.location.href);
+      successUrl.searchParams.set('reservationId', reservationId);
+      successUrl.searchParams.set('orderId', orderId);
+      successUrl.searchParams.set('amount', amount);
+
+      const failUrl = new URL(window.location.href);
+      failUrl.searchParams.set('reservationId', reservationId);
+      failUrl.searchParams.set('orderId', orderId);
+      failUrl.searchParams.set('amount', amount);
+
+      await tossPayments.requestPayment('CARD', {
+        amount,
+        orderId,
+        orderName,
+        successUrl: successUrl.toString(),
+        failUrl: failUrl.toString(),
+        customerName: formData.fullName || '고객',
+        customerEmail: formData.email,
+        customerMobilePhone: formData.phone,
+      });
     } catch (error) {
-      console.error('예약 실패:', error);
-      alert(error.message || '예약에 실패했습니다. 다시 시도해주세요.');
+      console.error('결제 요청 실패:', error.response?.data || error.message);
+      const msg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        '결제 요청에 실패했습니다.';
+      alert(msg);
     } finally {
       setLoading(false);
     }
   };
 
   const handleBack = () => {
-    navigate(-1);
+    navigate(`/booking/${hotelId}/extras`);
   };
 
   const nights =
@@ -148,10 +238,9 @@ const BookingStepPayment = () => {
   return (
     <div className="booking-step-payment">
       <div className="payment-grid">
-        {/* 왼쪽: 주문 요약 */}
         <div className="order-summary-section">
           <div className="order-summary">
-            <h3>요금 내역</h3>
+            <h3>결제 요약</h3>
 
             <div className="summary-items">
               <div className="summary-item">
@@ -169,228 +258,83 @@ const BookingStepPayment = () => {
             <div className="summary-divider"></div>
 
             <div className="summary-total">
-              <span>결제 예정 금액</span>
+              <span>총 결제 금액</span>
               <span className="price">₩{totalPrice.toLocaleString()}</span>
             </div>
 
             <div className="security-badge">
               <FontAwesomeIcon icon={faLock} />
-              <span>안전한 결제 환경</span>
+              <span>안전한 결제 보안</span>
             </div>
           </div>
         </div>
 
-        {/* 오른쪽: 결제 폼 */}
         <div className="payment-form-section">
-          <h2>결제 및 고객 정보</h2>
+          <h2>결제 정보를 입력하세요</h2>
 
-          <form onSubmit={handlePayment}>
-            {/* 결제 방법 선택 */}
-            <div className="payment-methods">
-              <label className={`method-option ${paymentMethod === 'card' ? 'selected' : ''}`}>
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="card"
-                  checked={paymentMethod === 'card'}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                />
-                <FontAwesomeIcon icon={faCreditCard} />
-                <span>신용/체크카드</span>
-              </label>
+          <div className="payment-methods">
+            <button
+              type="button"
+              className={`method-option ${paymentMethod === 'card' ? 'selected' : ''}`}
+              onClick={() => handlePayment()}
+              disabled={loading}
+            >
+              <FontAwesomeIcon icon={faCreditCard} />
+              <span>카드/간편결제</span>
+            </button>
+          </div>
 
-              <label className={`method-option ${paymentMethod === 'naverpay' ? 'selected' : ''}`}>
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="naverpay"
-                  checked={paymentMethod === 'naverpay'}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                />
-                <FontAwesomeIcon icon={faCreditCard} />
-                <span>네이버페이</span>
-              </label>
+          <div className="contact-fields">
+            <label>이름</label>
+            <input
+              type="text"
+              name="fullName"
+              value={formData.fullName}
+              onChange={handleInputChange}
+              placeholder="결제자 이름"
+            />
 
-              <label className={`method-option ${paymentMethod === 'kakaopay' ? 'selected' : ''}`}>
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="kakaopay"
-                  checked={paymentMethod === 'kakaopay'}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                />
-                <span style={{ fontSize: '1.4rem' }}>카카오페이</span>
-              </label>
-            </div>
+            <label>이메일</label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              placeholder="example@email.com"
+            />
 
-            {/* 카드 정보 입력 */}
-            {(paymentMethod === 'card') && (
-              <div className="card-form">
-                <div className="form-group">
-                  <label>카드번호</label>
-                  <div className="card-number-inputs">
-                    <input
-                      type="text"
-                      name="cardNumber1"
-                      value={formData.cardNumber1}
-                      onChange={(e) => handleCardNumberChange(1, e.target.value)}
-                      placeholder="0000"
-                      maxLength="4"
-                      required
-                    />
-                    <input
-                      type="text"
-                      name="cardNumber2"
-                      value={formData.cardNumber2}
-                      onChange={(e) => handleCardNumberChange(2, e.target.value)}
-                      placeholder="0000"
-                      maxLength="4"
-                      required
-                    />
-                    <input
-                      type="text"
-                      name="cardNumber3"
-                      value={formData.cardNumber3}
-                      onChange={(e) => handleCardNumberChange(3, e.target.value)}
-                      placeholder="0000"
-                      maxLength="4"
-                      required
-                    />
-                    <input
-                      type="text"
-                      name="cardNumber4"
-                      value={formData.cardNumber4}
-                      onChange={(e) => handleCardNumberChange(4, e.target.value)}
-                      placeholder="0000"
-                      maxLength="4"
-                      required
-                    />
-                  </div>
-                </div>
+            <label>휴대폰 번호</label>
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleInputChange}
+              placeholder="010-1234-5678"
+            />
+          </div>
 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>유효기간 (MM/YY)</label>
-                    <div className="expiry-inputs">
-                      <input
-                        type="text"
-                        name="expiryMonth"
-                        value={formData.expiryMonth}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, '').slice(0, 2);
-                          setFormData(prev => ({ ...prev, expiryMonth: value }));
-                        }}
-                        placeholder="MM"
-                        maxLength="2"
-                        required
-                      />
-                      <span>/</span>
-                      <input
-                        type="text"
-                        name="expiryYear"
-                        value={formData.expiryYear}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, '').slice(0, 2);
-                          setFormData(prev => ({ ...prev, expiryYear: value }));
-                        }}
-                        placeholder="YY"
-                        maxLength="2"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label>CVC</label>
-                    <input
-                      type="text"
-                      name="cvv"
-                      value={formData.cvv}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 3);
-                        setFormData(prev => ({ ...prev, cvv: value }));
-                      }}
-                      placeholder="***"
-                      maxLength="3"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 간편 결제 안내 */}
-            {(paymentMethod === 'naverpay' || paymentMethod === 'kakaopay') && (
-              <div className="paypal-form">
-                <p>선택한 간편결제 화면으로 이동하여 안전하게 결제하실 수 있습니다.</p>
-              </div>
-            )}
-
-            {/* 연락처 정보 */}
-            <div className="contact-form">
-              <h4>예약자 연락처</h4>
-
-              <div className="form-group">
-                <label>이메일</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="user@example.com"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>휴대전화 번호</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  placeholder="010-1234-5678"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* 약관 동의 */}
-            <label className="terms-checkbox">
+          <div className="terms">
+            <label>
               <input
                 type="checkbox"
                 name="agreeTerms"
                 checked={formData.agreeTerms}
                 onChange={handleInputChange}
               />
-              <span>
-                <a href="#terms">이용약관</a> 및 <a href="#privacy">개인정보 처리방침</a>에 동의합니다.
-              </span>
+              <span>결제 약관 및 환불 정책에 동의합니다.</span>
             </label>
+          </div>
 
-            {/* 네비게이션 버튼 */}
-            <div className="navigation-buttons">
-              <button type="button" className="btn-back" onClick={handleBack}>
-                <FontAwesomeIcon icon={faChevronLeft} />
-                이전 단계
-              </button>
-              <button
-                type="submit"
-                className="btn-pay"
-                disabled={loading || !formData.agreeTerms}
-              >
-                {loading ? (
-                  <>
-                    <span className="spinner"></span>
-                    처리 중...
-                  </>
-                ) : (
-                  <>
-                    결제하기
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
+          <div className="navigation-buttons">
+            <button type="button" className="btn-back" onClick={handleBack}>
+              <FontAwesomeIcon icon={faChevronLeft} />
+              이전 단계
+            </button>
+            <button type="button" className="btn-next" onClick={handlePayment} disabled={loading}>
+              결제 요청하기
+              <FontAwesomeIcon icon={faChevronRight} />
+            </button>
+          </div>
         </div>
       </div>
     </div>

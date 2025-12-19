@@ -11,12 +11,11 @@ const BookingStepDates = () => {
   const { hotelId } = useParams();
   const [searchParams] = useSearchParams();
   const { bookingData, setBookingData, navigate } = useOutletContext();
-  
-  // URL에서 날짜 정보 가져오기
+
   const urlCheckIn = searchParams.get('checkIn');
   const urlCheckOut = searchParams.get('checkOut');
   const urlGuests = searchParams.get('guests');
-  
+
   const [checkInDate, setCheckInDate] = useState(
     bookingData?.checkInDate || (urlCheckIn ? new Date(urlCheckIn) : new Date())
   );
@@ -35,7 +34,10 @@ const BookingStepDates = () => {
       setLoading(true);
       try {
         const data = await hotelApi.getHotelDetail(hotelId);
-        setHotel(data?.hotel || data);
+        setHotel({
+          ...(data?.hotel || data || {}),
+          rooms: data?.rooms || [],
+        });
       } catch (error) {
         console.error('호텔 정보 로드 실패:', error);
       } finally {
@@ -55,7 +57,22 @@ const BookingStepDates = () => {
   };
 
   const nights = calculateNights();
-  const pricePerNight = hotel?.price || 0;
+  const minRoomPrice = Array.isArray(hotel?.rooms)
+    ? Math.min(
+        ...hotel.rooms
+          .map((r) => r?.price)
+          .filter((v) => typeof v === 'number' && !Number.isNaN(v)),
+        Infinity
+      )
+    : Infinity;
+  const pricePerNight =
+    (typeof hotel?.price === 'number' && !Number.isNaN(hotel.price) && hotel.price > 0
+      ? hotel.price
+      : typeof hotel?.basePrice === 'number' && !Number.isNaN(hotel.basePrice) && hotel.basePrice > 0
+        ? hotel.basePrice
+        : minRoomPrice !== Infinity
+          ? minRoomPrice
+          : 0);
   const totalPrice = nights * pricePerNight;
 
   const handleNext = () => {
@@ -71,24 +88,24 @@ const BookingStepDates = () => {
       nights,
       pricePerNight,
       totalPrice,
-      hotel: hotel, // 호텔 정보 저장
+      hotel: hotel,
     }));
-    navigate('../room', { relative: 'path' });
+    navigate(`/booking/${hotelId}/room`);
   };
 
-  if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>호텔 정보 로딩 중...</div>;
+  if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>호텔 정보를 불러오는 중...</div>;
   if (!hotel) return <div style={{ padding: '2rem', textAlign: 'center' }}>호텔 정보를 찾을 수 없습니다.</div>;
 
   return (
     <div className="booking-step-dates">
       <div className="dates-grid">
-        {/* 왼쪽: 호텔 정보 카드 */}
+        {/* 좌측: 호텔 정보 카드 */}
         <div className="hotel-card-section">
           <div className="hotel-card">
-            <img 
-              src={hotel?.images?.[0] || hotel?.image || '/images/hotel-placeholder.jpg'} 
-              alt={hotel?.name || 'Hotel'} 
-              className="hotel-image" 
+            <img
+              src={hotel?.images?.[0] || hotel?.image || '/images/hotel-placeholder.jpg'}
+              alt={hotel?.name || 'Hotel'}
+              className="hotel-image"
             />
             <div className="hotel-info">
               <h3>{hotel?.name || '호텔 이름'}</h3>
@@ -101,7 +118,7 @@ const BookingStepDates = () => {
           </div>
         </div>
 
-        {/* 오른쪽: 날짜 선택 폼 */}
+        {/* 우측: 날짜 선택 영역 */}
         <div className="date-form-section">
           <h2>투숙 날짜를 선택하세요</h2>
 
@@ -173,7 +190,7 @@ const BookingStepDates = () => {
               <span className="value">₩{pricePerNight.toLocaleString()}</span>
             </div>
             <div className="summary-row">
-              <span>투숙객</span>
+              <span>투숙객 수</span>
               <span className="value">{guestCount}</span>
             </div>
             <div className="summary-row">

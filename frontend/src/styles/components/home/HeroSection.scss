@@ -12,6 +12,18 @@
   justify-content: center;
   overflow: hidden;
 
+  /* Subtle color wash for depth */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 20% 30%, rgba(141, 211, 187, 0.18), transparent 35%),
+      radial-gradient(circle at 80% 20%, rgba(17, 34, 17, 0.15), transparent 40%),
+      linear-gradient(180deg, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0.45) 70%);
+    z-index: 1;
+    pointer-events: none;
+  }
+
   .hero-bg {
     position: absolute;
     top: 0;
@@ -153,32 +165,54 @@
   .text-section {
     color: white;
     text-align: center;
+    max-width: 720px;
     width: 100%;
     margin-bottom: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.2rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
+      backdrop-filter: blur(6px);
+    }
 
     h1 {
-      font-size: 2.8rem;
+      font-size: 3.4rem;
       font-weight: 900;
-      line-height: 1.25;
-      margin-bottom: 0.8rem;
-      text-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
+      line-height: 1.18;
+      margin-bottom: 0.3rem;
+      text-shadow: 0 6px 20px rgba(0, 0, 0, 0.32);
       letter-spacing: -0.5px;
 
       @include respond-md {
-        font-size: 1.7rem;
-        margin-bottom: 0.6rem;
+        font-size: 2.1rem;
+        margin-bottom: 0.2rem;
       }
     }
 
     p {
-      font-size: 1rem;
-      line-height: 1.55;
-      opacity: 0.95;
-      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-      font-weight: 400;
+      font-size: 1.15rem;
+      line-height: 1.65;
+      opacity: 0.97;
+      text-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+      font-weight: 600;
 
       @include respond-md {
-        font-size: 0.9rem;
+        font-size: 1rem;
+        line-height: 1.5;
       }
     }
   }
@@ -191,11 +225,11 @@
     transform: translateY(-50%);
     width: 100%;
     max-width: 600px;
-    background: rgba(0, 0, 0, 0.5);
+    background: linear-gradient(135deg, rgba(10, 16, 18, 0.78), rgba(12, 18, 20, 0.62));
     padding: 1.7rem 1.8rem;
     border-radius: 1.5rem;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(5px);
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.38), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
 
     @include respond-md {
       padding: 1.5rem 1.2rem;
@@ -203,14 +237,15 @@
     }
 
     h3 {
-      font-size: 1.6rem;
+      font-size: 1.8rem;
       font-weight: 700;
       color: white;
       margin-bottom: 1.1rem;
       text-align: left;
+      letter-spacing: -0.2px;
 
       @include respond-md {
-        font-size: 1rem;
+        font-size: 1.2rem;
         margin-bottom: 0.7rem;
       }
     }
@@ -239,15 +274,15 @@
           display: flex;
           align-items: center;
           gap: 0.8rem;
-          padding: 0.8rem 1.2rem;
+          padding: 1rem 1.2rem;
           border: none;
           border-radius: 0.4rem;
           background: white;
           transition: all 0.2s ease;
-          height: 3.5rem;
+          height: 3.6rem;
 
           &:focus-within {
-            box-shadow: 0 0 0 6px rgba(255, 192, 203, 0.12);
+            box-shadow: 0 0 0 6px rgba(141, 211, 187, 0.2);
           }
 
           svg {

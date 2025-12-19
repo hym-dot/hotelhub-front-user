@@ -10,6 +10,10 @@ const hotelSchema = new Schema(
     city: { type: String, required: true, trim: true },
     address: { type: String, trim: true },
     location: { type: String, trim: true },
+    coords: {
+      lat: { type: Number },
+      lng: { type: Number },
+    },
     images: [{ type: String, trim: true }],
     amenities: [{ type: String, trim: true }],
     ratingAverage: { type: Number, default: 0, min: 0, max: 5 },

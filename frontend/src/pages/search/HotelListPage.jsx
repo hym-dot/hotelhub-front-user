@@ -68,8 +68,8 @@ const HotelListPage = () => {
 
         // 체크인/체크아웃이 있으면 추가
         if (checkInDate && checkOutDate) {
-          params.checkIn = checkInDate.toISOString().split('T')[0];
-          params.checkOut = checkOutDate.toISOString().split('T')[0];
+          params.checkIn = checkInDate.toISOString().split("T")[0];
+          params.checkOut = checkOutDate.toISOString().split("T")[0];
         }
 
         if (guests !== null) {
@@ -117,8 +117,8 @@ const HotelListPage = () => {
     const params = {};
     if (destination) params.city = destination;
     if (checkInDate && checkOutDate) {
-      params.checkIn = checkInDate.toISOString().split('T')[0];
-      params.checkOut = checkOutDate.toISOString().split('T')[0];
+      params.checkIn = checkInDate.toISOString().split("T")[0];
+      params.checkOut = checkOutDate.toISOString().split("T")[0];
     }
     if (guests !== null) params.guests = guests.toString();
     setSearchParams(params);

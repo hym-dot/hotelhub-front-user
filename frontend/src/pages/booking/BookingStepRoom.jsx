@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext, useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronLeft, faChevronRight, faCheck, faBed, faUsers } from '@fortawesome/free-solid-svg-icons';
+import { faChevronLeft, faChevronRight, faCheck, faUsers } from '@fortawesome/free-solid-svg-icons';
 import { hotelApi } from '../../api/hotelApi';
 import '../../styles/pages/booking/BookingStepRoom.scss';
 
@@ -24,7 +24,7 @@ const BookingStepRoom = () => {
         const data = await hotelApi.getHotelRooms(hotelId, params);
         setRooms(data || []);
       } catch (error) {
-        console.error('객실 로드 실패:', error);
+        console.error('객실 목록 불러오기 실패:', error);
       } finally {
         setLoading(false);
       }
@@ -41,7 +41,7 @@ const BookingStepRoom = () => {
 
   const handleNext = () => {
     if (!selectedRoomType) {
-      alert('객실을 선택해주세요');
+      alert('객실을 선택해주세요.');
       return;
     }
     const selectedRoom = rooms.find((r) => (r._id || r.id) === selectedRoomType);
@@ -50,23 +50,23 @@ const BookingStepRoom = () => {
     setBookingData((prev) => ({
       ...prev,
       roomType: selectedRoom,
-      roomId: selectedRoom._id || selectedRoom.id,
+      roomId: selectedRoom?._id || selectedRoom?.id,
       pricePerNight,
       totalPrice: nights * pricePerNight,
     }));
-    navigate('../extras', { relative: 'path' });
+    navigate(`/booking/${hotelId}/extras`);
   };
 
   const handleBack = () => {
-    navigate(-1);
+    navigate(`/booking/${hotelId}`);
   };
 
-  if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>객실 로딩 중...</div>;
-  if (rooms.length === 0) return <div style={{ padding: '2rem', textAlign: 'center' }}>예약 가능한 객실이 없습니다.</div>;
+  if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>객실 정보를 불러오는 중...</div>;
+  if (rooms.length === 0) return <div style={{ padding: '2rem', textAlign: 'center' }}>조건에 맞는 객실이 없습니다.</div>;
 
   return (
     <div className="booking-step-room">
-      <h2>예약할 객실을 선택하세요</h2>
+      <h2>투숙할 객실을 선택하세요</h2>
 
       <div className="room-grid">
         {rooms.map((room) => {
@@ -85,7 +85,7 @@ const BookingStepRoom = () => {
 
               <div className="room-image">
                 <img src={room.images?.[0] || room.image || '/images/room-placeholder.jpg'} alt={room.name || room.type} />
-                {room.available && <span className="available-badge">잔여 {room.available}실</span>}
+                {room.available && <span className="available-badge">잔여 {room.available}개</span>}
               </div>
 
               <div className="room-details">
@@ -94,7 +94,7 @@ const BookingStepRoom = () => {
 
                 <div className="room-specs">
                   <span className="spec">
-                    <strong>{room.size || '정보 없음'}</strong>
+                    <strong>{room.size || '객실 크기'}</strong>
                   </span>
                   <span className="spec">
                     <FontAwesomeIcon icon={faUsers} /> {room.capacity || room.guests || 2}명
@@ -121,7 +121,6 @@ const BookingStepRoom = () => {
         })}
       </div>
 
-      {/* 네비게이션 버튼 */}
       <div className="navigation-buttons">
         <button className="btn-back" onClick={handleBack}>
           <FontAwesomeIcon icon={faChevronLeft} />
