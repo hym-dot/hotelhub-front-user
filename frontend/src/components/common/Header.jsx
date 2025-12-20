@@ -1,5 +1,5 @@
 /* src/components/common/Header.jsx */
-import React, { useState } from "react";
+import React, {useEffect, useState} from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faHotel, faHeart, faBed } from "@fortawesome/free-solid-svg-icons";
@@ -31,7 +31,7 @@ const Header = ({ onMouseEnter, onMouseLeave }) => {
     <>
       {/* 찜하기 페이지일 때 'wishlist-header' 클래스 추가 */}
       <header className={`header ${isWishlistPage ? "wishlist-header" : ""}`}>
-        <div className="inner">
+        <div className="header-inner">
           {isWishlistPage ? (
             /* ==============================
               CASE 1: 찜하기 페이지용 헤더
