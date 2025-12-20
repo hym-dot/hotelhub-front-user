@@ -1,0 +1,431 @@
+@use "sass:color";
+@use "../../common/variables" as *;
+@use "../../common/mixins" as *;
+
+.hero-section {
+  position: relative;
+  width: 100%;
+  height: 90vh;
+  margin-top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+
+  /* Subtle color wash for depth */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 20% 30%, rgba(141, 211, 187, 0.18), transparent 35%),
+    radial-gradient(circle at 80% 20%, rgba(17, 34, 17, 0.15), transparent 40%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0.45) 70%);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .hero-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    z-index: 0;
+    transition: background-image 0.8s ease-in-out;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.2) 100%);
+    }
+  }
+
+  /* Navigation Buttons */
+  .hero-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3rem;
+    height: 3rem;
+    background: rgba(255, 255, 255, 0.3);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(4px);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.5);
+      transform: translateY(-50%) scale(1.1);
+    }
+
+    &:active {
+      transform: translateY(-50%) scale(0.95);
+    }
+
+    &.hero-nav-prev {
+      left: 2rem;
+
+      @include respond-md {
+        left: 1rem;
+        width: 2.5rem;
+        height: 2.5rem;
+        font-size: 1rem;
+      }
+    }
+
+    &.hero-nav-next {
+      right: 2rem;
+
+      @include respond-md {
+        right: 1rem;
+        width: 2.5rem;
+        height: 2.5rem;
+        font-size: 1rem;
+      }
+    }
+  }
+
+  /* Indicators */
+  .hero-indicators {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.8rem;
+    z-index: 20;
+
+    @include respond-md {
+      bottom: 1.5rem;
+      gap: 0.6rem;
+    }
+
+    .indicator-dot {
+      width: 0.8rem;
+      height: 0.8rem;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.4);
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.6);
+        transform: scale(1.2);
+      }
+
+      &.active {
+        background: white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      }
+
+      @include respond-md {
+        width: 0.7rem;
+        height: 0.7rem;
+      }
+    }
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 3rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    height: 100%;
+    padding-top: 6.4rem;
+    padding-bottom: 3rem;
+    gap: 4rem;
+
+    @include respond-md {
+      padding: 4rem 1.5rem 2rem;
+      gap: 2rem;
+    }
+  }
+
+  /* 중앙 텍스트 영역 */
+  .text-section {
+    color: white;
+    text-align: center;
+    max-width: 720px;
+    width: 100%;
+    margin-bottom: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.2rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
+      backdrop-filter: blur(6px);
+    }
+
+    h1 {
+      font-size: 3.4rem;
+      font-weight: 900;
+      line-height: 1.18;
+      margin-bottom: 0.3rem;
+      text-shadow: 0 6px 20px rgba(0, 0, 0, 0.32);
+      letter-spacing: -0.5px;
+
+      @include respond-md {
+        font-size: 2.1rem;
+        margin-bottom: 0.2rem;
+      }
+    }
+
+    p {
+      font-size: 1.15rem;
+      line-height: 1.65;
+      opacity: 0.97;
+      text-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+      font-weight: 600;
+
+      @include respond-md {
+        font-size: 1rem;
+        line-height: 1.5;
+      }
+    }
+  }
+
+  /* 하단 검색 영역 */
+  .search-section {
+    position: absolute;
+    top: 50%;
+    left: 5%;
+    transform: translateY(-50%);
+    width: 100%;
+    max-width: 600px;
+    background: linear-gradient(135deg, rgba(10, 16, 18, 0.78), rgba(12, 18, 20, 0.62));
+    padding: 1.7rem 1.8rem;
+    border-radius: 1.5rem;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.38), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    @include respond-md {
+      padding: 1.5rem 1.2rem;
+      max-width: 90%;
+    }
+
+    h3 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 1.1rem;
+      text-align: left;
+      letter-spacing: -0.2px;
+
+      @include respond-md {
+        font-size: 1.2rem;
+        margin-bottom: 0.7rem;
+      }
+    }
+
+    .search-form-simple {
+      display: flex;
+      gap: 0.8rem;
+      align-items: stretch;
+
+      @include respond-md {
+        gap: 0.6rem;
+      }
+
+      .form-group {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        position: relative;
+
+        @include respond-md {
+          width: 100%;
+        }
+
+        .input-field {
+          display: flex;
+          align-items: center;
+          gap: 0.8rem;
+          padding: 1rem 1.2rem;
+          border: none;
+          border-radius: 0.4rem;
+          background: white;
+          transition: all 0.2s ease;
+          height: 3.6rem;
+
+          &:focus-within {
+            box-shadow: 0 0 0 6px rgba(141, 211, 187, 0.2);
+          }
+
+          svg {
+            color: #333;
+            font-size: 1rem;
+            flex-shrink: 0;
+          }
+
+          input,
+          .react-datepicker-wrapper input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 1.1rem;
+            background: transparent;
+            color: #333;
+            font-weight: 500;
+
+            &::placeholder {
+              color: #999;
+              font-weight: 400;
+            }
+          }
+        }
+      }
+
+      .btn-search-main {
+        width: 3.5rem;
+        height: 3.5rem;
+        border-radius: 0.4rem;
+        border: none;
+        background: linear-gradient(135deg, $color-mint 0%, color.scale($color-mint, $lightness: -8%) 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 1.1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 3px 10px rgba(141, 211, 187, 0.3);
+        flex-shrink: 0;
+
+        @include respond-md {
+          width: 3rem;
+          height: 3rem;
+          font-size: 1rem;
+        }
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 5px 15px rgba(141, 211, 187, 0.4);
+        }
+
+        &:active {
+          transform: translateY(0);
+        }
+      }
+    }
+  }
+}
+
+/* DatePicker 커스텀 스타일 */
+.react-datepicker-wrapper {
+  width: 100%;
+
+  input {
+    width: 100% !important;
+  }
+}
+
+.react-datepicker {
+  font-family: inherit;
+  border: 1px solid #e0e0e0;
+  border-radius: 0.6rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+
+  .react-datepicker__header {
+    background: linear-gradient(135deg, $color-mint 0%, color.scale($color-mint, $lightness: -8%) 100%);
+    border-bottom: none;
+    border-top-left-radius: 0.6rem;
+    border-top-right-radius: 0.6rem;
+    padding: 0.8rem;
+  }
+
+  .react-datepicker__current-month {
+    color: white;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+
+  .react-datepicker__day-name {
+    color: white;
+    font-weight: 600;
+    width: 2.2rem;
+    line-height: 2.2rem;
+  }
+
+  .react-datepicker__day {
+    width: 2.2rem;
+    line-height: 2.2rem;
+    color: #333;
+    font-size: 0.85rem;
+
+    &:hover {
+      background: #f0f0f0;
+      border-radius: 0.3rem;
+    }
+  }
+
+  .react-datepicker__day--selected {
+    background: $color-mint;
+    color: white;
+    border-radius: 0.3rem;
+    font-weight: 600;
+
+    &:hover {
+      background: color.scale($color-mint, $lightness: -5%);
+    }
+  }
+
+  .react-datepicker__day--in-range {
+    background: rgba(141, 211, 187, 0.12);
+  }
+
+  .react-datepicker__day--today {
+    font-weight: 700;
+    color: $color-mint;
+  }
+
+  .react-datepicker__navigation {
+    top: 1rem;
+
+    &--previous {
+      left: 0.8rem;
+    }
+
+    &--next {
+      right: 0.8rem;
+    }
+  }
+
+  .react-datepicker__navigation-icon::before {
+    border-color: white;
+    border-width: 2px 2px 0 0;
+  }
+}
